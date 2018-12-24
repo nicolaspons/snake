@@ -11,7 +11,8 @@ const player = {
     next: { x: 0, y: -1 },
     body: [],
     remove: { x: 0, y: 0 },
-    score: 0
+    score: 0,
+    bonus: []
 }
 
 /**
@@ -37,6 +38,10 @@ function createMatrix(w, h) {
 }
 
 function draw() {
+    context.fillStyle = '#f0f';
+    player.bonus.forEach(element => {
+        context.fillRect(element.x, element.y, 1, 1);
+    })
     context.fillStyle = '#fff';
     player.body.forEach(element => {
         context.fillRect(element.x, element.y, 1, 1);
@@ -50,10 +55,23 @@ function undraw() {
     context.fillRect(player.remove.x, player.remove.y, 1, 1);
 }
 
+function is_eating() {
+
+    for (let i = 0; i < player.bonus.length; ++i) {
+        if (player.bonus[i].x === player.pos.x && player.bonus[i].y === player.pos.y) {
+            player.bonus.splice(i, 1);
+            console.log('miam');
+            return true;
+        }
+    }
+    return false;
+}
+
 function playerMove() {
     if (collide(arena)) {
         playerReset();
     } else {
+        let isEating = is_eating();
         player.prev.x = player.pos.x;
         player.prev.y = player.pos.y;
         player.pos.x += player.next.x;
@@ -63,11 +81,10 @@ function playerMove() {
         pos.y = player.pos.y;
         player.body.unshift(pos);
 
-        player.remove = player.body.pop();
-
-
-        undraw();
-
+        if (!isEating) {
+            player.remove = player.body.pop();
+            undraw();
+        }
     }
     updateScore();
 }
@@ -80,6 +97,7 @@ function playerReset() {
     player.next = { x: 0, y: -1 };
     context.fillStyle = '#202028';
     context.fillRect(0, 0, size, size);
+    player.bonus = [{ x: 10, y: 10 }];
 }
 
 let dropCounter = 0;
