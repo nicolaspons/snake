@@ -9,7 +9,8 @@ const player = {
     pos: { x: 5, y: 5 },
     prev: { x: 5, y: 5 },
     next: { x: 0, y: -1 },
-    matrix: [],
+    body: [],
+    remove: { x: 0, y: 0 },
     score: 0
 }
 
@@ -37,10 +38,16 @@ function createMatrix(w, h) {
 
 function draw() {
     context.fillStyle = '#fff';
-    context.fillRect(player.prev.x, player.prev.y, 1, 1);
-    context.fillRect(player.pos.x, player.pos.y, 1, 1);
+    player.body.forEach(element => {
+        context.fillRect(element.x, element.y, 1, 1);
+    });
     context.fillStyle = '#000';
     context.fillRect(player.pos.x + 0.25, player.pos.y + 0.25, 0.5, 0.5);
+}
+
+function undraw() {
+    context.fillStyle = '#202028';
+    context.fillRect(player.remove.x, player.remove.y, 1, 1);
 }
 
 function playerMove() {
@@ -51,8 +58,16 @@ function playerMove() {
         player.prev.y = player.pos.y;
         player.pos.x += player.next.x;
         player.pos.y += player.next.y;
+        const pos = { x: 0, y: 0 };
+        pos.x = player.pos.x;
+        pos.y = player.pos.y;
+        player.body.unshift(pos);
 
-        console.log(player.prev.x + "," + player.prev.y + " // " + player.pos.x + "," + player.pos.y);
+        player.remove = player.body.pop();
+
+
+        undraw();
+
     }
     updateScore();
 }
@@ -60,15 +75,15 @@ function playerMove() {
 function playerReset() {
     player.pos = { x: 5, y: 5 };
     player.score = 0;
-    player.body = [];
-    player.body.push(player.pos);
-
+    player.body = [{ x: 5, y: 5 }, { x: 5, y: 6 }, { x: 5, y: 7 }];
+    player.remove = { x: 0, y: 0 };
+    player.next = { x: 0, y: -1 };
     context.fillStyle = '#202028';
     context.fillRect(0, 0, size, size);
 }
 
 let dropCounter = 0;
-let dropInterval = 250;
+let dropInterval = 250; //250
 let lastTime = 0;
 
 function update(time = 0) {
