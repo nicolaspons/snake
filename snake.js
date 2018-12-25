@@ -24,6 +24,15 @@ function collide() {
     return player.pos.x < 0 || player.pos.y < 0 || player.pos.x >= size || player.pos.y >= size;
 }
 
+function collideItself() {
+    player.body.forEach(element => {
+        if (element.x == player.prev.x && element.y == player.prev.y) {
+            return true;
+        }
+    })
+    return false;
+}
+
 /**
  * Create the map
  * @param {width} w 
@@ -68,7 +77,7 @@ function is_eating() {
 }
 
 function playerMove() {
-    if (collide(arena)) {
+    if (collide() || collideItself()) {
         playerReset();
     } else {
         let isEating = is_eating();
@@ -81,12 +90,27 @@ function playerMove() {
         pos.y = player.pos.y;
         player.body.unshift(pos);
 
-        if (!isEating) {
+        if (isEating) {
+            player.score++;
+            fillBonus();
+        } else {
             player.remove = player.body.pop();
             undraw();
         }
     }
     updateScore();
+}
+
+function fillBonus() {
+    let isOk = false;
+    let x;
+    let y;
+    while (!isOk) {
+        x = Math.floor(Math.random() * Math.floor(size));
+        y = Math.floor(Math.random() * Math.floor(size));
+        isOk = !player.body.includes({ x, y });
+    }
+    player.bonus.push({ x, y });
 }
 
 function playerReset() {
@@ -97,11 +121,11 @@ function playerReset() {
     player.next = { x: 0, y: -1 };
     context.fillStyle = '#202028';
     context.fillRect(0, 0, size, size);
-    player.bonus = [{ x: 10, y: 10 }];
+    fillBonus();
 }
 
 let dropCounter = 0;
-let dropInterval = 250; //250
+let dropInterval = 100;
 let lastTime = 0;
 
 function update(time = 0) {
