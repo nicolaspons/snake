@@ -25,12 +25,13 @@ function collide() {
 }
 
 function collideItself() {
+    let ct = 0;
     player.body.forEach(element => {
-        if (element.x == player.prev.x && element.y == player.prev.y) {
-            return true;
+        if (element.x == player.pos.x && element.y == player.pos.y) {
+            ct++;
         }
     })
-    return false;
+    return ct !== 1;
 }
 
 /**
@@ -119,6 +120,7 @@ function playerReset() {
     player.body = [{ x: 5, y: 5 }, { x: 5, y: 6 }, { x: 5, y: 7 }];
     player.remove = { x: 0, y: 0 };
     player.next = { x: 0, y: -1 };
+    player.bonus = [];
     context.fillStyle = '#202028';
     context.fillRect(0, 0, size, size);
     fillBonus();
