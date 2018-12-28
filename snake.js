@@ -10,7 +10,7 @@ function collide(p) {
     return false;
 }
 
-function collideItself(p) {
+function playercollideItself(p) {
     let ct = 0;
     p.body.forEach(element => {
         if (element.x == p.pos.x && element.y == p.pos.y) {
@@ -18,6 +18,16 @@ function collideItself(p) {
         }
     })
     return ct > 1;
+}
+
+function collideItself(p) {
+    let ct = 0;
+    p.body.forEach(element => {
+        if (element.x == p.pos.x && element.y == p.pos.y) {
+            ct++;
+        }
+    })
+    return ct != 0;
 }
 
 function draw() {
@@ -49,14 +59,8 @@ function is_eating(p) {
 }
 
 function fillBonus() {
-    let isOk = false;
-    let x;
-    let y;
-    while (!isOk) {
-        x = Math.floor(Math.random() * Math.floor(size));
-        y = Math.floor(Math.random() * Math.floor(size));
-        isOk = !player.body.includes({ x, y });
-    }
+    let x = Math.floor(Math.random() * Math.floor(size));
+    let y = Math.floor(Math.random() * Math.floor(size));
     player.bonus = { x, y };
 }
 
@@ -108,6 +112,7 @@ class ia {
         return { x: player.bonus.x - this.pos.x, y: player.bonus.y - this.pos.y };
     }
     checkMove(currPos) {
+        debugger;
         let newPos = this.getPos();
         let a = !collide(this);
         let b = !collideItself(this)
@@ -128,27 +133,58 @@ class ia {
         return false;
     }
 
+    getBody() {
+        const temp = this.body[1];
+        const x = temp.x - this.pos.x;
+        const y = temp.y - this.pos.y;
+        if (x == 0) {
+            if (y == 1) { return 'down'; }
+            return 'up';
+        }
+        if (x == 1) { return 'right'; }
+        return 'left';
+    }
+    getMax(tab) {
+        let max = 0;
+        let id = '';
+        for (var key in tab) {
+            if (tab[key] > max) {
+                max = tab[key];
+                id = key;
+            }
+        }
+        return id;
+    }
+    getCoord(move) {
+        switch (move) {
+            case 'up':
+                return { x: 0, y: -1 };
+            case 'down':
+                return { x: 0, y: 1 };
+            case 'left':
+                return { x: -1, y: 0 };
+            default:
+                return { x: 1, y: 0 };
+        }
+    }
     move() {
         const currPos = this.getPos();
-        if (currPos.x != 0) {
-            if (currPos.x < 0) {
-                this.pos.x -= 1;
-                if (this.checkMove(currPos)) { return; }
-                this.pos.x += 1;
-            }
-            this.pos.x += 1;
+        var dictMove = { 'up': 1, 'down': 1, 'left': 1, 'right': 1 };
+        if (currPos.x < 0) { dictMove['left'] += 1; } else if (currPos.x > 0) { dictMove['right'] += 1; }
+        if (currPos.y < 0) { dictMove['up'] += 1; } else if (currPos.y > 0) { dictMove['down'] += 1; }
+
+        delete dictMove[this.getBody()];
+        debugger;
+        for (let i = 0; i < 3; ++i) {
+            let key = this.getMax(dictMove);
+            let keyPos = this.getCoord(key);
+            this.pos.x += keyPos.x;
+            this.pos.y += keyPos.y;
+            //bug ici 
             if (this.checkMove(currPos)) { return; }
-            this.pos.x -= 1;
-        }
-        if (currPos.y != 0)  {
-            if (currPos.y < 0) {
-                this.pos.y -= 1;
-                if (this.checkMove(currPos)) { return; }
-                this.pos.y += 1;
-            }
-            this.pos.y += 1;
-            if (this.checkMove(currPos)) { return; }
-            this.pos.y -= 1;
+            delete dictMove[key];
+            this.pos.x -= keyPos.x;
+            this.pos.y -= keyPos.y;
         }
         console.log(this.color, ' cannot move');
         reset();
@@ -198,7 +234,7 @@ function reset() {
 }
 
 function playerMove() {
-    if (collide(player) || collideItself(player)) {
+    if (collide(player) || playercollideItself(player)) {
         console.log('player connot move');
         reset();
     } else {
