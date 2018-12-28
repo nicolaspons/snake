@@ -5,7 +5,9 @@ const size = canvas.width / scale
 context.scale(scale, scale);
 
 function collide(p) {
-    return p.pos.x < 0 || p.pos.y < 0 || p.pos.x >= size || p.pos.y >= size;
+    if (p.pos.x < 0 || p.pos.y < 0 || p.pos.x >= size || p.pos.y >= size)
+        return true;
+    return false;
 }
 
 function collideItself(p) {
@@ -25,14 +27,16 @@ function draw() {
     player.body.forEach(element => {
         context.fillRect(element.x, element.y, 1, 1);
     });
-    context.fillStyle = '#0ff';
-    ia.body.forEach(element => {
-        context.fillRect(element.x, element.y, 1, 1);
-    });
-    context.fillStyle = '#000';
+    //IA
+    player.ennemies.forEach(ennemy => {
+        context.fillStyle = ennemy.color;
+        ennemy.body.forEach(element => {
+            context.fillRect(element.x, element.y, 1, 1);
+        });
+        context.fillStyle = '#000';
+        context.fillRect(ennemy.pos.x + 0.25, ennemy.pos.y + 0.25, 0.5, 0.5);
+    })
     context.fillRect(player.pos.x + 0.25, player.pos.y + 0.25, 0.5, 0.5);
-    context.fillRect(ia.pos.x + 0.25, ia.pos.y + 0.25, 0.5, 0.5);
-
 }
 
 function undraw(p) {
@@ -59,7 +63,7 @@ function fillBonus() {
 
 
 let dropCounter = 0;
-let dropInterval = 1000; //100
+let dropInterval = 100; //100
 let lastTime = 0;
 
 function update(time = 0) {
@@ -68,7 +72,7 @@ function update(time = 0) {
     dropCounter += deltaTime;
     if (dropCounter > dropInterval) {
         playerMove();
-        iaMove();
+        ennemiesMove();
         dropCounter = 0;
     }
     draw();
@@ -92,73 +96,70 @@ document.addEventListener('keydown', event => {
 })
 
 // IA
-const ia = {
-    pos: { x: size - 5, y: size - 5 },
-    prev: { x: size - 5, y: size - 5 },
-    body: [],
-    remove: { x: 0, y: 0 },
-}
-
-function getPos() {
-    return { x: player.bonus.x - ia.pos.x, y: player.bonus.y - ia.pos.y };
-}
-
-function checkIaMove(currPos) {
-    let newPos = getPos();
-    let a = !collide(ia);
-    debugger;
-
-    let b = !collideItself(ia)
-    debugger;
-    if (a && b) {
-        let pos = { x: 0, y: 0 };
-        pos.x = ia.pos.x;
-        pos.y = ia.pos.y;
-        ia.body.unshift(pos);
-
-        if (is_eating(ia)) {
-            fillBonus();
-        } else {
-            ia.remove = ia.body.pop();
-            undraw(ia);
-        }
-        return true;
+class ia {
+    constructor(positionX, positionY, color) {
+        this.pos = { x: positionX, y: positionY };
+        this.prev = { x: positionX, y: positionY };
+        this.body = [];
+        this.remove = { x: 0, y: 0 };
+        this.color = color;
     }
-    debugger;
-    return false;
-}
+    getPos() {
+        return { x: player.bonus.x - this.pos.x, y: player.bonus.y - this.pos.y };
+    }
+    checkMove(currPos) {
+        let newPos = this.getPos();
+        let a = !collide(this);
+        let b = !collideItself(this)
+        if (a && b) {
+            let pos = { x: 0, y: 0 };
+            pos.x = this.pos.x;
+            pos.y = this.pos.y;
+            this.body.unshift(pos);
 
-function iaMove() {
-    if (collide(ia) || collideItself(ia)) {
-        reset();
-    } else {
-        const currPos = getPos();
+            if (is_eating(this)) {
+                fillBonus();
+            } else {
+                this.remove = this.body.pop();
+                undraw(this);
+            }
+            return true;
+        }
+        return false;
+    }
 
+    move() {
+        const currPos = this.getPos();
         if (currPos.x != 0) {
             if (currPos.x < 0) {
-                ia.pos.x -= 1;
-                if (checkIaMove(currPos)) { return; }
-                ia.pos.x += 1;
+                this.pos.x -= 1;
+                if (this.checkMove(currPos)) { return; }
+                this.pos.x += 1;
             }
-            ia.pos.x += 1;
-            if (checkIaMove(currPos)) { return; }
-            ia.pos.x -= 1;
+            this.pos.x += 1;
+            if (this.checkMove(currPos)) { return; }
+            this.pos.x -= 1;
         }
         if (currPos.y != 0)  {
             if (currPos.y < 0) {
-                ia.pos.y -= 1;
-                if (checkIaMove(currPos)) { return; }
-                ia.pos.y += 1;
+                this.pos.y -= 1;
+                if (this.checkMove(currPos)) { return; }
+                this.pos.y += 1;
             }
-            ia.pos.y += 1;
-            if (checkIaMove(currPos)) { return; }
-            ia.pos.y -= 1;
+            this.pos.y += 1;
+            if (this.checkMove(currPos)) { return; }
+            this.pos.y -= 1;
         }
-        console.log('cant move');
+        console.log(this.color, ' cannot move');
         reset();
     }
 }
 
+function ennemiesMove() {
+    player.ennemies.forEach(element => {
+        element.move();
+    })
+}
 
 // PLAYER
 const player = {
@@ -167,7 +168,8 @@ const player = {
     body: [],
     remove: { x: 0, y: 0 },
     score: 0,
-    bonus: null
+    bonus: null,
+    ennemies: []
 }
 
 function reset() {
@@ -179,18 +181,25 @@ function reset() {
     player.next = { x: 0, y: -1 };
 
     //IA
-    ia.pos = { x: size - 5, y: size - 5 };
-    ia.body = [{ x: size - 5, y: size - 5 }, { x: size - 5, y: size - 6 }, { x: size - 5, y: size - 7 }];
-    ia.remove = { x: 0, y: 0 };
+    player.ennemies = [];
+    const ia1 = new ia(size - 5, size - 5, 'blue');
+    const ia2 = new ia(size - 5, 5, 'yellow');
+    const ia3 = new ia(5, size - 5, 'red');
+    ia1.body = [{ x: size - 5, y: size - 5 }, { x: size - 5, y: size - 4 }, { x: size - 5, y: size - 3 }];
+    ia2.body = [{ x: size - 5, y: 5 }, { x: size - 5, y: 4 }, { x: size - 5, y: 3 }];
+    ia3.body = [{ x: 5, y: size - 5 }, { x: 5, y: size - 4 }, { x: 5, y: size - 3 }];
+    player.ennemies.push(ia1);
+    player.ennemies.push(ia2);
+    player.ennemies.push(ia3);
 
     context.fillStyle = '#202028';
     context.fillRect(0, 0, size, size);
     fillBonus();
-
 }
 
 function playerMove() {
     if (collide(player) || collideItself(player)) {
+        console.log('player connot move');
         reset();
     } else {
         player.pos.x += player.next.x;
