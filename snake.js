@@ -59,7 +59,7 @@ function fillBonus() {
 
 
 let dropCounter = 0;
-let dropInterval = 100;
+let dropInterval = 1000; //100
 let lastTime = 0;
 
 function update(time = 0) {
@@ -138,8 +138,9 @@ function iaMove() {
             if (currPos.x < 0) {
                 ia.pos.x -= 1;
                 if (checkIaMove(currPos)) { return; }
+                ia.pos.x += 1;
             }
-            ia.pos.x += 2;
+            ia.pos.x += 1;
             if (checkIaMove(currPos)) { return; }
             ia.pos.x -= 1;
         }
@@ -147,8 +148,9 @@ function iaMove() {
             if (currPos.y < 0) {
                 ia.pos.y -= 1;
                 if (checkIaMove(currPos)) { return; }
+                ia.pos.y += 1;
             }
-            ia.pos.y += 2;
+            ia.pos.y += 1;
             if (checkIaMove(currPos)) { return; }
             ia.pos.y -= 1;
         }
