@@ -4,102 +4,44 @@ const scale = 10;
 const size = canvas.width / scale
 context.scale(scale, scale);
 
-const arena = createMatrix(size, size);
-const player = {
-    pos: { x: 5, y: 5 },
-    prev: { x: 5, y: 5 },
-    next: { x: 0, y: -1 },
-    body: [],
-    remove: { x: 0, y: 0 },
-    score: 0,
-    bonus: []
+function collide(p) {
+    return p.pos.x < 0 || p.pos.y < 0 || p.pos.x >= size || p.pos.y >= size;
 }
 
-/**
- * check if the player hits the border
- * @param {*} arena 
- * @param {*} player 
- */
-function collide() {
-    return player.pos.x < 0 || player.pos.y < 0 || player.pos.x >= size || player.pos.y >= size;
-}
-
-function collideItself() {
+function collideItself(p) {
     let ct = 0;
-    player.body.forEach(element => {
-        if (element.x == player.pos.x && element.y == player.pos.y) {
+    p.body.forEach(element => {
+        if (element.x == p.pos.x && element.y == p.pos.y) {
             ct++;
         }
     })
-    return ct !== 1;
-}
-
-/**
- * Create the map
- * @param {width} w 
- * @param {height} h 
- */
-function createMatrix(w, h) {
-    const matrix = [];
-    while (h--) {
-        matrix.push(new Array(w).fill(0));
-    }
-    return matrix;
+    return ct > 1;
 }
 
 function draw() {
     context.fillStyle = '#f0f';
-    player.bonus.forEach(element => {
-        context.fillRect(element.x, element.y, 1, 1);
-    })
+    context.fillRect(player.bonus.x, player.bonus.y, 1, 1);
     context.fillStyle = '#fff';
     player.body.forEach(element => {
         context.fillRect(element.x, element.y, 1, 1);
     });
+    context.fillStyle = '#0ff';
+    ia.body.forEach(element => {
+        context.fillRect(element.x, element.y, 1, 1);
+    });
     context.fillStyle = '#000';
     context.fillRect(player.pos.x + 0.25, player.pos.y + 0.25, 0.5, 0.5);
+    context.fillRect(ia.pos.x + 0.25, ia.pos.y + 0.25, 0.5, 0.5);
+
 }
 
-function undraw() {
+function undraw(p) {
     context.fillStyle = '#202028';
-    context.fillRect(player.remove.x, player.remove.y, 1, 1);
+    context.fillRect(p.remove.x, p.remove.y, 1, 1);
 }
 
-function is_eating() {
-
-    for (let i = 0; i < player.bonus.length; ++i) {
-        if (player.bonus[i].x === player.pos.x && player.bonus[i].y === player.pos.y) {
-            player.bonus.splice(i, 1);
-            console.log('miam');
-            return true;
-        }
-    }
-    return false;
-}
-
-function playerMove() {
-    if (collide() || collideItself()) {
-        playerReset();
-    } else {
-        let isEating = is_eating();
-        player.prev.x = player.pos.x;
-        player.prev.y = player.pos.y;
-        player.pos.x += player.next.x;
-        player.pos.y += player.next.y;
-        const pos = { x: 0, y: 0 };
-        pos.x = player.pos.x;
-        pos.y = player.pos.y;
-        player.body.unshift(pos);
-
-        if (isEating) {
-            player.score++;
-            fillBonus();
-        } else {
-            player.remove = player.body.pop();
-            undraw();
-        }
-    }
-    updateScore();
+function is_eating(p) {
+    return player.bonus.x === p.pos.x && player.bonus.y === p.pos.y;
 }
 
 function fillBonus() {
@@ -111,20 +53,10 @@ function fillBonus() {
         y = Math.floor(Math.random() * Math.floor(size));
         isOk = !player.body.includes({ x, y });
     }
-    player.bonus.push({ x, y });
+    player.bonus = { x, y };
 }
 
-function playerReset() {
-    player.pos = { x: 5, y: 5 };
-    player.score = 0;
-    player.body = [{ x: 5, y: 5 }, { x: 5, y: 6 }, { x: 5, y: 7 }];
-    player.remove = { x: 0, y: 0 };
-    player.next = { x: 0, y: -1 };
-    player.bonus = [];
-    context.fillStyle = '#202028';
-    context.fillRect(0, 0, size, size);
-    fillBonus();
-}
+
 
 let dropCounter = 0;
 let dropInterval = 100;
@@ -136,6 +68,7 @@ function update(time = 0) {
     dropCounter += deltaTime;
     if (dropCounter > dropInterval) {
         playerMove();
+        iaMove();
         dropCounter = 0;
     }
     draw();
@@ -152,13 +85,130 @@ document.addEventListener('keydown', event => {
     } else if (event.keyCode === 38 || event.keyCode === 90) {
         player.next = { x: 0, y: -1 };
     } else if (event.keyCode === 39 || event.keyCode === 68) {
-        console.log('tamer');
         player.next = { x: 1, y: 0 };
     } else if (event.keyCode === 40 || event.keyCode === 83) {
         player.next = { x: 0, y: 1 };
     }
 })
 
-playerReset();
+// IA
+const ia = {
+    pos: { x: size - 5, y: size - 5 },
+    prev: { x: size - 5, y: size - 5 },
+    body: [],
+    remove: { x: 0, y: 0 },
+}
+
+function getPos() {
+    return { x: player.bonus.x - ia.pos.x, y: player.bonus.y - ia.pos.y };
+}
+
+function checkIaMove(currPos) {
+    let newPos = getPos();
+    let a = !collide(ia);
+    debugger;
+
+    let b = !collideItself(ia)
+    debugger;
+    if (a && b) {
+        let pos = { x: 0, y: 0 };
+        pos.x = ia.pos.x;
+        pos.y = ia.pos.y;
+        ia.body.unshift(pos);
+
+        if (is_eating(ia)) {
+            fillBonus();
+        } else {
+            ia.remove = ia.body.pop();
+            undraw(ia);
+        }
+        return true;
+    }
+    debugger;
+    return false;
+}
+
+function iaMove() {
+    if (collide(ia) || collideItself(ia)) {
+        reset();
+    } else {
+        const currPos = getPos();
+
+        if (currPos.x != 0) {
+            if (currPos.x < 0) {
+                ia.pos.x -= 1;
+                if (checkIaMove(currPos)) { return; }
+            }
+            ia.pos.x += 2;
+            if (checkIaMove(currPos)) { return; }
+            ia.pos.x -= 1;
+        }
+        if (currPos.y != 0)  {
+            if (currPos.y < 0) {
+                ia.pos.y -= 1;
+                if (checkIaMove(currPos)) { return; }
+            }
+            ia.pos.y += 2;
+            if (checkIaMove(currPos)) { return; }
+            ia.pos.y -= 1;
+        }
+        console.log('cant move');
+        reset();
+    }
+}
+
+
+// PLAYER
+const player = {
+    pos: { x: 5, y: 5 },
+    next: { x: 0, y: -1 },
+    body: [],
+    remove: { x: 0, y: 0 },
+    score: 0,
+    bonus: null
+}
+
+function reset() {
+    //PLAYER
+    player.pos = { x: 5, y: 5 };
+    player.score = 0;
+    player.body = [{ x: 5, y: 5 }, { x: 5, y: 6 }, { x: 5, y: 7 }];
+    player.remove = { x: 0, y: 0 };
+    player.next = { x: 0, y: -1 };
+
+    //IA
+    ia.pos = { x: size - 5, y: size - 5 };
+    ia.body = [{ x: size - 5, y: size - 5 }, { x: size - 5, y: size - 6 }, { x: size - 5, y: size - 7 }];
+    ia.remove = { x: 0, y: 0 };
+
+    context.fillStyle = '#202028';
+    context.fillRect(0, 0, size, size);
+    fillBonus();
+
+}
+
+function playerMove() {
+    if (collide(player) || collideItself(player)) {
+        reset();
+    } else {
+        player.pos.x += player.next.x;
+        player.pos.y += player.next.y;
+        const pos = { x: 0, y: 0 };
+        pos.x = player.pos.x;
+        pos.y = player.pos.y;
+        player.body.unshift(pos);
+
+        if (is_eating(player)) {
+            player.score++;
+            fillBonus();
+        } else {
+            player.remove = player.body.pop();
+            undraw(player);
+        }
+    }
+    updateScore();
+}
+
+reset();
 updateScore();
 update();
