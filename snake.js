@@ -151,7 +151,6 @@ class ia {
         return { x: player.bonus.x - this.pos.x, y: player.bonus.y - this.pos.y };
     }
     checkMove() {
-        //debugger;
         let a = !collide(this);
         let b = !collideItself(this);
         let c = !collideOthers(false, this);
