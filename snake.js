@@ -30,6 +30,42 @@ function collideItself(p) {
     return ct != 0;
 }
 
+function collideOthers(isPlayer, char) {
+    if (!isPlayer) {
+        player.ennemies.forEach(ennemy => {
+            if (ennemy.color !== char.color) {
+                ennemy.body.forEach(element => {
+                    if (char.pos.x == element.x && char.pos.y == element.y) {
+                        removeEnnemy(this);
+                        return true;
+                    }
+                })
+            }
+        })
+        player.body.forEach(element => {
+            if (char.pos.x == element.x && char.pos.y == element.y) {
+                removeEnnemy(this);
+                return true;
+            }
+        })
+        return false;
+    }
+    player.ennemies.forEach(ennemy => {
+        ennemy.body.forEach(element => {
+            if (player.pos.x == element.x && player.pos.y == element.y) {
+                reset();
+                return true;
+            }
+        })
+    })
+    return false;
+}
+
+function removeEnnemy(ennemy) {
+    const id = player.ennemies.indexOf(ennemy);
+    player.ennemies.splice(id, 1);
+}
+
 function draw() {
     context.fillStyle = '#f0f';
     context.fillRect(player.bonus.x, player.bonus.y, 1, 1);
@@ -46,6 +82,7 @@ function draw() {
         context.fillStyle = '#000';
         context.fillRect(ennemy.pos.x + 0.25, ennemy.pos.y + 0.25, 0.5, 0.5);
     })
+    context.fillStyle = '#000';
     context.fillRect(player.pos.x + 0.25, player.pos.y + 0.25, 0.5, 0.5);
 }
 
@@ -96,6 +133,8 @@ document.addEventListener('keydown', event => {
         player.next = { x: 1, y: 0 };
     } else if (event.keyCode === 40 || event.keyCode === 83) {
         player.next = { x: 0, y: 1 };
+    } else if (event.keyCode == 32) {
+        dropInterval += 200;
     }
 })
 
@@ -111,12 +150,12 @@ class ia {
     getPos() {
         return { x: player.bonus.x - this.pos.x, y: player.bonus.y - this.pos.y };
     }
-    checkMove(currPos) {
-        debugger;
-        let newPos = this.getPos();
+    checkMove() {
+        //debugger;
         let a = !collide(this);
-        let b = !collideItself(this)
-        if (a && b) {
+        let b = !collideItself(this);
+        let c = !collideOthers(false, this);
+        if (a && b && c) {
             let pos = { x: 0, y: 0 };
             pos.x = this.pos.x;
             pos.y = this.pos.y;
@@ -174,14 +213,13 @@ class ia {
         if (currPos.y < 0) { dictMove['up'] += 1; } else if (currPos.y > 0) { dictMove['down'] += 1; }
 
         delete dictMove[this.getBody()];
-        debugger;
         for (let i = 0; i < 3; ++i) {
             let key = this.getMax(dictMove);
             let keyPos = this.getCoord(key);
             this.pos.x += keyPos.x;
             this.pos.y += keyPos.y;
             //bug ici 
-            if (this.checkMove(currPos)) { return; }
+            if (this.checkMove()) { return; }
             delete dictMove[key];
             this.pos.x -= keyPos.x;
             this.pos.y -= keyPos.y;
@@ -234,7 +272,7 @@ function reset() {
 }
 
 function playerMove() {
-    if (collide(player) || playercollideItself(player)) {
+    if (collide(player) || playercollideItself(player) || collideOthers(true, this)) {
         console.log('player connot move');
         reset();
     } else {
