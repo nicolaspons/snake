@@ -1,4 +1,4 @@
-# tetris
+# Snake
 Snake with 3 IA in javascript
 
 The goal is to be the last snake alive. You'll have to eat to get big and
